@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Nur Youth">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6A6A4C"/>
+      <stop offset="0.55" stop-color="#5A5A40"/>
+      <stop offset="1" stop-color="#3A3A28"/>
+    </linearGradient>
+    <linearGradient id="emas" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F0E2C4"/>
+      <stop offset="1" stop-color="#D4A373"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g fill="none" stroke="url(#emas)" stroke-width="6" opacity="0.35">
+    <circle cx="256" cy="256" r="196"/>
+    <circle cx="256" cy="256" r="168"/>
+  </g>
+  <!-- bulan sabit -->
+  <path d="M300 96a164 164 0 1 0 0 320 132 132 0 1 1 0-320z" fill="url(#emas)" opacity="0.95"/>
+  <!-- mushaf terbuka -->
+  <g transform="translate(256 300)">
+    <path d="M-108 -6c34-26 70-26 104 0 34-26 70-26 104 0v78c-34-24-70-24-104 0-34-24-70-24-104 0z"
+          fill="#3A3A28" stroke="url(#emas)" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M0 -6v78" stroke="url(#emas)" stroke-width="9"/>
+    <g stroke="url(#emas)" stroke-width="6" opacity="0.75">
+      <path d="M-86 16h58M-86 38h58M28 16h58M28 38h58"/>
+    </g>
+  </g>
+  <!-- huruf nun -->
+  <text x="256" y="196" text-anchor="middle" font-family="Amiri, 'Traditional Arabic', serif"
+        font-size="150" fill="#3A3A28" font-weight="700">ن</text>
+</svg>

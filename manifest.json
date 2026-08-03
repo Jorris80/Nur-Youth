@@ -1,0 +1,23 @@
+{
+  "name": "Nur Youth — Al-Qur'an & Bahasa Arab",
+  "short_name": "Nur Youth",
+  "description": "Hafalan Al-Qur'an, tajwid interaktif, mufrodat Bahasa Arab, kultum 7 menit, khutbah Jum'at, dzikir & doa, tuntunan sholat, kalender belajar, dan pelacak poin harian. Bisa dipakai tanpa internet.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F7F7F2",
+  "theme_color": "#5A5A40",
+  "categories": ["education", "lifestyle", "books"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Hafalan Qur'an", "short_name": "Hafalan", "url": "./index.html" },
+    { "name": "Dzikir & Doa", "short_name": "Dzikir", "url": "./index.html" },
+    { "name": "Progres & Poin", "short_name": "Progres", "url": "./index.html" }
+  ]
+}
