@@ -203,6 +203,30 @@ html[data-tema="gelap"] .stat-angka { color:var(--sand); }
 .tabel-guru tr.baris-perhatian { background:rgba(180,85,63,.07); }
 .tabel-guru .samar { font-size:11px; opacity:.62; }
 
+/* ---- Tautan footer & lembar informasi ---- */
+.footer-tautan { display:flex; flex-wrap:wrap; gap:6px 14px; justify-content:center; margin-top:10px; }
+.footer-tautan button { background:none; border:0; padding:2px 0; cursor:pointer;
+  font-family:inherit; font-size:12px; color:var(--olive); text-decoration:underline; }
+html[data-tema="gelap"] .footer-tautan button { color:var(--sand); }
+.lembar { position:fixed; inset:0; z-index:90; background:rgba(20,20,14,.55);
+  display:flex; align-items:flex-end; justify-content:center; padding:0; }
+@media (min-width:640px) { .lembar { align-items:center; padding:24px; } }
+.lembar-kotak { position:relative; background:var(--kertas); width:100%; max-width:640px;
+  max-height:88vh; border-radius:18px 18px 0 0; box-shadow:0 -8px 40px rgba(0,0,0,.3); }
+@media (min-width:640px) { .lembar-kotak { border-radius:18px; } }
+.lembar-isi { overflow-y:auto; max-height:88vh; padding:26px 22px 30px; font-size:13.5px; line-height:1.72; }
+.lembar-isi h3 { margin:0 0 4px; font-size:19px; color:var(--olive); }
+html[data-tema="gelap"] .lembar-isi h3 { color:var(--sand); }
+.lembar-isi h4 { margin:18px 0 5px; font-size:14px; }
+.lembar-isi p { margin:0 0 9px; }
+.lembar-isi hr { border:0; border-top:1px solid var(--garis); margin:16px 0; }
+.lembar-isi .samar { opacity:.65; font-size:12px; }
+.info-baris { display:flex; justify-content:space-between; gap:12px;
+  padding:7px 0; border-bottom:1px solid var(--garis); margin:0 !important; }
+.lembar-tutup { position:absolute; top:10px; right:12px; z-index:2; border:0;
+  background:var(--garis); color:inherit; width:32px; height:32px; border-radius:50%;
+  font-size:15px; cursor:pointer; font-family:inherit; }
+
 /* Tombol suara yang sedang membaca */
 .sedang-bicara { box-shadow:0 0 0 2px var(--clay) inset; animation:denyut 1.2s ease-in-out infinite; }
 @keyframes denyut { 0%,100% { opacity:1; } 50% { opacity:.6; } }
@@ -319,8 +343,20 @@ html[data-tema="gelap"] .lonceng { background:var(--sand); color:#1A1A16; }
     <div class="wadah">
       <b>Nur Youth • Platform Pembelajaran Al-Qur'an &amp; Bahasa Arab Generasi Muda</b>
       Dukungan Mode Offline • Pelacakan Harian • Sertifikat Poin XP • AI Assistant
+      <div class="footer-tautan">
+        <button type="button" data-lembar="tentang">Tentang &amp; Versi</button>
+        <button type="button" data-lembar="syarat">Syarat &amp; Ketentuan</button>
+        <button type="button" data-lembar="privasi">Pemberitahuan Privasi</button>
+      </div>
     </div>
   </footer>
+
+  <div class="lembar sembunyi" id="lembar" role="dialog" aria-modal="true">
+    <div class="lembar-kotak">
+      <button class="lembar-tutup" type="button" data-tutup-lembar="1" aria-label="Tutup">✕</button>
+      <div class="lembar-isi" id="lembar-isi"></div>
+    </div>
+  </div>
 
   <div class="lonceng sembunyi" id="lonceng" role="status" aria-live="polite"></div>
 

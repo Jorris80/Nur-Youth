@@ -27,7 +27,7 @@ var CFG = {
   /* Versi PWA GitHub: ganti nilai ini dengan URL Web App Apps Script Anda
      (Deploy → Kelola deployment → salin URL berakhiran /exec).
      Versi Web App: dibiarkan kosong, transport otomatis pakai google.script.run. */
-  WEB_APP_URL: (typeof WEB_APP_URL_INJEKSI !== 'undefined' ? WEB_APP_URL_INJEKSI : ''),
+  WEB_APP_URL: (typeof WEB_APP_URL_INJEKSI !== 'undefined' ? WEB_APP_URL_INJEKSI : 'https://script.google.com/macros/s/AKfycbxYerrbAVsQDEMjVudqiYN-Dn56nr5GVDS5J_ug0V-e9vX_GRQLMOuCYXe4bulOTyZN7g/exec'),
   KUNCI_CACHE: 'nur_youth_cache_v1',
   KUNCI_OUTBOX: 'nur_youth_outbox_v1',
   KUNCI_TEMA: 'nur_youth_tema',
@@ -449,6 +449,285 @@ var Murottal = {
   }
 };
 
+/**
+ * Bacakan teks Arab dengan jalur bertingkat:
+ *   1. suara Arab bila perangkat punya
+ *   2. transliterasi latin dibaca dengan suara Indonesia (cukup dekat secara bunyi)
+ *   3. baru menyerah dan menjelaskan
+ * Dipakai semua tab selain Hafalan Qur'an, yang punya murottal sendiri.
+ */
+function ucapArab(arab, latin) {
+  arab = String(arab || '').trim();
+  latin = String(latin || '').trim();
+
+  if (!Suara.siap()) {
+    lonceng('Peramban ini belum mendukung pembacaan suara. Coba Chrome, Edge, atau Safari terbaru.');
+    return;
+  }
+
+  // 1. Suara Arab tersedia -> baca aslinya
+  if (Suara.adaSuara('ar')) return void Suara.ucap(arab, 'ar-SA');
+
+  // 2. Tidak ada suara Arab -> bacakan transliterasinya.
+  //    Suara Indonesia melafalkan tulisan latin ini cukup mendekati aslinya,
+  //    jauh lebih berguna daripada tidak berbunyi sama sekali.
+  if (latin) {
+    if (!Suara._pernahIngat.transliterasi) {
+      Suara._pernahIngat.transliterasi = true;
+      lonceng('Perangkat ini belum punya suara Bahasa Arab, jadi yang dibacakan adalah ' +
+              'transliterasi latinnya dengan suara Indonesia. Bunyinya mendekati, tapi bukan ' +
+              'pengganti bacaan yang benar. ' + Suara._panduanPasangSuara(), 8000);
+    }
+    return void Suara.ucap(_bersihkanLatin(latin), 'id-ID', 0.82);
+  }
+
+  // 3. Tidak ada keduanya
+  lonceng('Perangkat ini belum punya suara Bahasa Arab dan teks ini tidak memiliki ' +
+          'transliterasi. ' + Suara._panduanPasangSuara(), 8000);
+}
+
+/** Rapikan transliterasi agar enak dibaca mesin TTS Indonesia */
+function _bersihkanLatin(t) {
+  return String(t)
+    .replace(/\(\d+x\)/gi, '')        // buang penanda pengulangan
+    .replace(/^\s*\d+\.\s*/gm, '')    // buang penomoran di awal baris
+    .replace(/['’`]/g, '')        // apostrof hamzah/ain mengacaukan pelafalan
+    .replace(/-/g, ' ')                // tanda hubung dibaca sebagai jeda kata
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/* ===================== VERSI & INFORMASI APLIKASI ===================== */
+
+var INFO_APP = {
+  versi: '1.1.0',
+  dibangun: '2026-07-31',
+  pengembang: 'Jorris Ardhian'
+};
+
+/**
+ * Isi halaman informasi. Ditulis sebagai fungsi agar mudah diperbarui
+ * dan agar teksnya konsisten antara Web App dan PWA.
+ */
+function isiTentang() {
+  return '<h3>Nur Youth</h3>' +
+    '<p class="info-baris"><span>Versi aplikasi</span><b>' + INFO_APP.versi + '</b></p>' +
+    '<p class="info-baris"><span>Tanggal rilis</span><b>' + INFO_APP.dibangun + '</b></p>' +
+    '<p class="info-baris"><span>Pengembang</span><b>' + esc(INFO_APP.pengembang) + '</b></p>' +
+    '<p class="info-baris"><span>Mode</span><b>' + (PakaiGoogleScriptRun ? 'Web App' : 'PWA') + '</b></p>' +
+    '<p class="info-baris"><span>Status jaringan</span><b>' + (navigator.onLine ? 'Online' : 'Offline') + '</b></p>' +
+    '<hr>' +
+    '<p>Platform pembelajaran Al-Qur\'an dan Bahasa Arab untuk generasi muda: ' +
+    'hafalan, tajwid, mufrodat, dzikir, tuntunan sholat, dan pemantauan progres.</p>' +
+    '<h4>Sumber konten</h4>' +
+    '<p>Teks Al-Qur\'an bersumber dari mushaf standar. Terjemahan Bahasa Indonesia ' +
+    'merujuk pada terjemahan Kementerian Agama Republik Indonesia. Audio murottal ' +
+    'disediakan oleh penyedia layanan pihak ketiga dan tunduk pada ketentuan ' +
+    'masing-masing penyedia.</p>' +
+    '<p>Hak cipta atas teks terjemahan, tafsir, dan rekaman audio tetap berada pada ' +
+    'pemiliknya. Aplikasi ini menampilkan konten tersebut untuk keperluan ' +
+    'pembelajaran, tidak mengklaim kepemilikan atasnya.</p>' +
+    '<h4>Laporan kekeliruan</h4>' +
+    '<p>Jika Anda menemukan kekeliruan penulisan ayat, terjemahan, atau bacaan, ' +
+    'mohon segera laporkan kepada pengelola agar dapat diperbaiki. Ketepatan ' +
+    'teks keagamaan adalah hal yang kami utamakan.</p>';
+}
+
+function isiSyarat() {
+  return '<h3>Syarat &amp; Ketentuan</h3>' +
+    '<p class="samar">Berlaku sejak ' + INFO_APP.dibangun + ' · Versi ' + INFO_APP.versi + '</p>' +
+
+    '<h4>1. Penerimaan ketentuan</h4>' +
+    '<p>Dengan menggunakan Nur Youth, Anda menyatakan telah membaca dan menyetujui ' +
+    'ketentuan ini. Bila tidak menyetujui, mohon hentikan penggunaan aplikasi.</p>' +
+
+    '<h4>2. Tujuan penggunaan</h4>' +
+    '<p>Aplikasi ini ditujukan untuk pembelajaran Al-Qur\'an dan Bahasa Arab. ' +
+    'Aplikasi bukan pengganti guru, ustadz, atau lembaga pendidikan. Untuk bacaan ' +
+    'Al-Qur\'an, bimbingan langsung dari pengajar yang berkompeten tetap diperlukan, ' +
+    'khususnya dalam hal tajwid dan makhraj.</p>' +
+
+    '<h4>3. Ketepatan konten keagamaan</h4>' +
+    '<p>Kami berusaha menjaga ketepatan seluruh teks. Namun kesalahan teknis tetap ' +
+    'mungkin terjadi. Pengguna dianjurkan merujuk pada mushaf cetak bertanda tashih ' +
+    'resmi untuk keperluan hafalan dan ibadah. Fitur pembacaan suara oleh perangkat ' +
+    '(teks-ke-ucapan) bukan bacaan yang bertajwid dan tidak boleh dijadikan rujukan ' +
+    'pelafalan.</p>' +
+
+    '<h4>4. Fitur kecerdasan buatan</h4>' +
+    '<p>Materi kultum, khutbah, dan penjelasan yang dihasilkan AI merupakan bantuan ' +
+    'penyusunan, bukan fatwa atau keputusan hukum agama. Seluruh materi wajib ditinjau ' +
+    'oleh orang yang berkompeten sebelum disampaikan kepada khalayak. Kami tidak ' +
+    'bertanggung jawab atas isi yang dihasilkan AI maupun akibat penggunaannya.</p>' +
+
+    '<h4>5. Akun dan data</h4>' +
+    '<p>Progres belajar terhubung dengan alamat email Anda. Jaga kerahasiaan akses ' +
+    'akun Anda. Pada lingkungan lembaga, pengampu kelas dapat melihat progres belajar ' +
+    'anggota kelasnya sebagaimana dijelaskan dalam Pemberitahuan Privasi.</p>' +
+
+    '<h4>6. Larangan</h4>' +
+    '<p>Dilarang menyalahgunakan aplikasi untuk tujuan yang melanggar hukum, ' +
+    'menyebarkan konten yang menghina agama, memanipulasi data progres, ' +
+    'atau mengakses data pengguna lain tanpa hak.</p>' +
+
+    '<h4>7. Ketersediaan layanan</h4>' +
+    '<p>Aplikasi disediakan "sebagaimana adanya". Sebagian fitur bergantung pada ' +
+    'layanan pihak ketiga dan koneksi internet, sehingga dapat terganggu atau berubah ' +
+    'sewaktu-waktu tanpa pemberitahuan sebelumnya.</p>' +
+
+    '<h4>8. Batasan tanggung jawab</h4>' +
+    '<p>Sepanjang diizinkan hukum yang berlaku, pengembang tidak bertanggung jawab ' +
+    'atas kerugian yang timbul dari penggunaan aplikasi, termasuk kehilangan data ' +
+    'atau gangguan layanan. Lakukan pencadangan berkala melalui fitur Ekspor Cadangan.</p>' +
+
+    '<h4>9. Hak kekayaan intelektual</h4>' +
+    '<p>Kode dan rancangan aplikasi milik pengembang. Teks Al-Qur\'an, terjemahan, ' +
+    'tafsir, dan audio tetap menjadi milik pemegang haknya masing-masing.</p>' +
+
+    '<h4>10. Perubahan ketentuan</h4>' +
+    '<p>Ketentuan ini dapat diperbarui. Perubahan berlaku sejak ditampilkan di ' +
+    'halaman ini disertai penyesuaian nomor versi.</p>';
+}
+
+function isiPrivasi() {
+  return '<h3>Pemberitahuan Privasi</h3>' +
+    '<p class="samar">Berlaku sejak ' + INFO_APP.dibangun + ' · Versi ' + INFO_APP.versi + '</p>' +
+
+    '<h4>Data yang kami simpan</h4>' +
+    '<p>Alamat email Anda, sebagai penanda progres belajar. Selain itu: jumlah ayat ' +
+    'yang dihafal, poin, level, rentetan hari aktif, hasil kuis, kosakata yang ' +
+    'dikuasai, hitungan dzikir, pengingat yang Anda buat, serta tanggal aktivitas.</p>' +
+
+    '<h4>Yang tidak kami simpan</h4>' +
+    '<p>Kami tidak meminta maupun menyimpan kata sandi, nomor telepon, alamat rumah, ' +
+    'data pembayaran, lokasi GPS, foto, maupun daftar kontak. Rekaman suara pada fitur ' +
+    'uji lafal diproses di perangkat Anda dan tidak dikirim ke server kami.</p>' +
+
+    '<h4>Tempat penyimpanan</h4>' +
+    '<p>Data tersimpan di Google Spreadsheet milik pengelola aplikasi, serta di ' +
+    'penyimpanan lokal peramban Anda agar mode offline dapat berjalan. Menghapus data ' +
+    'peramban akan menghapus salinan lokal tersebut, bukan data di server.</p>' +
+
+    '<h4>Siapa yang dapat melihat data Anda</h4>' +
+    '<p>Pengelola aplikasi, dan — bila Anda terdaftar dalam sebuah kelas — pengampu ' +
+    'kelas tersebut. Pengampu dapat melihat progres belajar Anda: poin, hafalan, ' +
+    'rentetan hari, dan kapan terakhir aktif. Pengampu tidak dapat melihat data ' +
+    'anggota kelas lain yang tidak diampunya. Pada papan peringkat, alamat email ' +
+    'ditampilkan dalam bentuk tersamar.</p>' +
+
+    '<h4>Layanan pihak ketiga</h4>' +
+    '<p>Aplikasi memanggil layanan berikut saat fiturnya digunakan: Google Apps Script ' +
+    'dan Google Sheets untuk penyimpanan; Google Gemini untuk fitur AI; serta penyedia ' +
+    'data Al-Qur\'an dan jadwal sholat. Teks yang Anda kirim ke fitur AI diteruskan ke ' +
+    'layanan Google dan tunduk pada kebijakan privasi mereka. Jangan memasukkan data ' +
+    'pribadi atau rahasia ke dalam kolom AI.</p>' +
+
+    '<h4>Anak dan remaja</h4>' +
+    '<p>Aplikasi ini memang ditujukan bagi pelajar, termasuk yang berusia di bawah 18 ' +
+    'tahun. Kami hanya mengumpulkan data seperlunya untuk keperluan pembelajaran. ' +
+    'Untuk penggunaan di lembaga pendidikan, kami menganjurkan pihak lembaga memberi ' +
+    'tahu orang tua atau wali mengenai pemakaian aplikasi ini.</p>' +
+
+    '<h4>Hak Anda</h4>' +
+    '<p>Anda dapat mengunduh seluruh data Anda kapan saja melalui fitur Ekspor Cadangan ' +
+    'di tab Progres. Anda juga dapat meminta penghapusan data dengan menghubungi ' +
+    'pengelola aplikasi. Data akan dihapus dalam waktu wajar setelah permintaan ' +
+    'diverifikasi.</p>' +
+
+    '<h4>Iklan dan penjualan data</h4>' +
+    '<p>Aplikasi ini tidak menayangkan iklan. Kami tidak menjual, menyewakan, atau ' +
+    'menukarkan data pengguna kepada pihak mana pun.</p>' +
+
+    '<h4>Perubahan</h4>' +
+    '<p>Pemberitahuan ini dapat diperbarui. Perubahan penting akan disertai penyesuaian ' +
+    'nomor versi yang tertera di atas.</p>';
+}
+
+/* ===================== LEMBAR INFORMASI (MODAL) ===================== */
+
+function bukaLembar(jenis) {
+  var isi = jenis === 'syarat' ? isiSyarat()
+          : jenis === 'privasi' ? isiPrivasi()
+          : isiTentang();
+
+  var lembar = el('lembar');
+  el('lembar-isi').innerHTML = isi;
+  lembar.classList.remove('sembunyi');
+  document.body.style.overflow = 'hidden';
+  S.lembarTerbuka = jenis;
+
+  // Daftarkan ke riwayat agar tombol back menutup lembar, bukan keluar aplikasi
+  Riwayat.dorong({ jenis: 'lembar', nilai: jenis });
+  el('lembar-isi').scrollTop = 0;
+}
+
+function tutupLembar(dariRiwayat) {
+  var lembar = el('lembar');
+  if (!lembar || lembar.classList.contains('sembunyi')) return false;
+  lembar.classList.add('sembunyi');
+  document.body.style.overflow = '';
+  S.lembarTerbuka = null;
+  if (!dariRiwayat) history.back();
+  return true;
+}
+
+/* ===================== TOMBOL KEMBALI PONSEL ===================== */
+
+/**
+ * Tanpa ini, menekan tombol back di Android langsung menutup aplikasi.
+ * Setiap perpindahan tab dan pembukaan lembar didaftarkan sebagai entri
+ * riwayat, sehingga back mengembalikan pengguna ke tampilan sebelumnya.
+ * Back pada tampilan awal tetap keluar, sesuai kebiasaan pengguna Android.
+ */
+var Riwayat = {
+  siap: false,
+
+  mulai: function () {
+    if (Riwayat.siap || typeof history === 'undefined' || !history.pushState) return;
+    Riwayat.siap = true;
+
+    // Entri dasar: menandai tampilan awal
+    history.replaceState({ jenis: 'tab', nilai: S.tab, dasar: true }, '');
+
+    window.addEventListener('popstate', function (ev) {
+      var st = ev.state || {};
+
+      // Lembar informasi terbuka -> tutup dulu
+      if (S.lembarTerbuka && st.jenis !== 'lembar') { tutupLembar(true); return; }
+
+      // Kuis sedang berjalan -> keluar dari kuis dulu
+      if (S.kuis && st.jenis !== 'kuis') { S.kuis = null; gambarModul(); return; }
+
+      if (st.jenis === 'lembar') { bukaLembarTanpaRiwayat(st.nilai); return; }
+
+      if (st.jenis === 'tab' && st.nilai) {
+        S.tab = st.nilai;
+        Suara.hentikan();
+        if (typeof Murottal !== 'undefined') Murottal.hentikan();
+        gambarNav();
+        gambarModul();
+        return;
+      }
+
+      // Tidak ada state yang dikenali: biarkan peramban keluar seperti biasa
+    });
+  },
+
+  /** Catat perpindahan sebagai entri riwayat baru */
+  dorong: function (state) {
+    if (!Riwayat.siap) return;
+    try { history.pushState(state, ''); } catch (e) {}
+  }
+};
+
+function bukaLembarTanpaRiwayat(jenis) {
+  el('lembar-isi').innerHTML = jenis === 'syarat' ? isiSyarat()
+                             : jenis === 'privasi' ? isiPrivasi() : isiTentang();
+  el('lembar').classList.remove('sembunyi');
+  document.body.style.overflow = 'hidden';
+  S.lembarTerbuka = jenis;
+}
+
 /* ===================== DASBOR GURU ===================== */
 
 /**
@@ -671,8 +950,11 @@ var TAB = [
 ];
 
 function gantiTab(id) {
+  if (S.tab === id) return;
   S.tab = id;
   Suara.hentikan();
+  if (typeof Murottal !== 'undefined') Murottal.hentikan();
+  Riwayat.dorong({ jenis: 'tab', nilai: id });   // agar tombol back kembali ke tab sebelumnya
   gambarNav();
   gambarModul();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -959,7 +1241,7 @@ function modulArab() {
     return '<div class="kartu" style="margin:0">' +
       '<div class="baris-tbl" style="justify-content:space-between;align-items:flex-start">' +
         '<span class="tag">' + esc(v.category) + '</span>' +
-        '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(v.arabic) + '">🔊</button></div>' +
+        '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(v.arabic) + '" data-latin="' + esc(v.latin || '') + '">🔊</button></div>' +
       '<div class="arab-kecil" style="margin:9px 0 3px;font-size:25px">' + esc(v.arabic) + '</div>' +
       '<div class="latin">' + esc(v.latin) + '</div>' +
       '<div style="font-weight:600;margin-top:3px">' + esc(v.indonesian) + '</div>' +
@@ -1077,7 +1359,7 @@ function modulTajwid() {
         return '<div class="ayat"><div class="ayat-atas">' +
           '<span class="tag tag-clay">' + esc(c.highlightWord || 'contoh') + '</span>' +
           '<div class="baris-tbl">' +
-            '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(c.arabic) + '">🔊 Dengar</button>' +
+            '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(c.arabic) + '" data-latin="' + esc(c.latin || c.transliteration || '') + '">🔊 Dengar</button>' +
             '<button class="tbl tbl-kecil" data-uji="' + esc(c.arabic) + '" data-aturan="' + esc(pilih.title) + '">🎤 Uji lafal</button>' +
           '</div></div>' +
           '<div class="arab">' + esc(c.arabic) + '</div>' +
@@ -1110,7 +1392,7 @@ function modulTajwid() {
         '<div class="baris-tbl" style="justify-content:space-between">' +
           '<div><div class="arab-kecil" style="font-size:20px">' + esc(m.exampleWordArabic) + '</div>' +
           '<div class="latin" style="font-size:12px">' + esc(m.exampleWordLatin) + '</div></div>' +
-          '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(m.exampleWordArabic) + '">🔊</button></div>' +
+          '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(m.exampleWordArabic) + '" data-latin="' + esc(m.exampleWordLatin || '') + '">🔊</button></div>' +
       '</div>';
     }).join('') + '</div>';
 
@@ -1302,7 +1584,7 @@ function kartuDzikir(d) {
     '<div class="baris-tbl" style="justify-content:space-between;align-items:flex-start">' +
       '<div><h3 style="margin:0 0 3px;font-size:15.5px">' + esc(d.title) + '</h3>' +
       '<span class="tag">' + (d.type === 'doa' ? 'Doa' : 'Dzikir ' + d.type.replace('_', ' & ')) + ' · ' + target + '×</span></div>' +
-      '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(d.arabic) + '">🔊</button></div>' +
+      '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(d.arabic) + '" data-latin="' + esc(d.latin || '') + '">🔊</button></div>' +
     '<div class="arab" style="margin:13px 0 7px">' + esc(d.arabic) + '</div>' +
     '<div class="latin">' + esc(d.latin) + '</div>' +
     '<div class="terjemah" style="margin-top:6px">' + esc(d.translation) + '</div>' +
@@ -1381,7 +1663,7 @@ function modulSholat() {
     '<div class="kartu">' +
       '<div class="baris-tbl" style="justify-content:space-between">' +
         '<span class="tag">Langkah ' + L.stepNumber + ' dari ' + langkah.length + '</span>' +
-        '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(L.arabic) + '">🔊 Dengar</button></div>' +
+        '<button class="tbl tbl-garis tbl-kecil" data-ucap="' + esc(L.arabic) + '" data-latin="' + esc(L.latin || '') + '">🔊 Dengar</button></div>' +
       '<div class="bar" style="margin:11px 0 14px"><div class="bar-isi" style="width:' +
         Math.round((i + 1) / langkah.length * 100) + '%"></div></div>' +
       '<h3 style="margin:0 0 10px;font-size:17px">' + esc(L.title) + '</h3>' +
@@ -1645,7 +1927,7 @@ function gambarModul() {
 
 function pasangPendengar() {
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest('[data-tab],[data-hafal],[data-ucap],[data-ucap-id],[data-audio],[data-dengar],[data-kategori],[data-pilih-kelas],[data-aksi-guru],[data-hapus-santri],' +
+    var t = ev.target.closest('[data-tab],[data-hafal],[data-ucap],[data-ucap-id],[data-latin],[data-lembar],[data-tutup-lembar],[data-audio],[data-dengar],[data-kategori],[data-pilih-kelas],[data-aksi-guru],[data-hapus-santri],' +
       '[data-mufrodat],[data-jawab],[data-tajwid],[data-uji],[data-ktab],[data-kultum],[data-khutbah],' +
       '[data-tandai-kultum],[data-dtab],[data-tasbih],[data-reset-tasbih],[data-langkah],' +
       '[data-pengingat],[data-hapus-pengingat],[data-jenis],button');
@@ -1658,12 +1940,14 @@ function pasangPendengar() {
     if (d.jenis) return bukaHasilCari(d.jenis, d.id);
 
     /* suara */
+    if (d.lembar) return void bukaLembar(d.lembar);
+    if (d.tutupLembar !== undefined) return void tutupLembar();
     if (d.pilihKelas) return void muatDasbor(d.pilihKelas);
     if (d.aksiGuru) return void aksiGuru(d.aksiGuru);
     if (d.hapusSantri) return void keluarkanSantri(d.hapusSantri);
     if (d.dengar) return void dengarAyat(d.dengar);
     if (d.audio) return void Murottal.mainkan(d.audio);
-    if (d.ucap) return Suara.ucap(d.ucap, 'ar-SA');
+    if (d.ucap) return void ucapArab(d.ucap, d.latin);
     if (d.ucapId) return Suara.ucap(d.ucapId, 'id-ID');
 
     /* hafalan */
@@ -2006,6 +2290,10 @@ function muatSemua() {
     S.dzikirHitung = ambilCache('dzikir') || {};
     S.ayatSurah = ambilCache('ayat_' + S.surahAktif) || [];
     gambarHeader(); gambarNav(); gambarModul();
+    Riwayat.mulai();    // tombol back ponsel kembali ke tampilan sebelumnya
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && S.lembarTerbuka) tutupLembar();
+    });
     muatStatusGuru();   // tab Dasbor Guru hanya muncul bila mengampu kelas
     // Ambil murottal surah aktif di latar agar tombol 🔊 langsung berfungsi.
     if (!S.ayatSurah.length && navigator.onLine) setTimeout(function () { muatAyat(S.surahAktif); }, 900);
