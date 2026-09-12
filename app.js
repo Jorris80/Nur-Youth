@@ -575,7 +575,7 @@ var NavGulir = {
 /* ===================== VERSI & INFORMASI APLIKASI ===================== */
 
 var INFO_APP = {
-  versi: '1.1.3',
+  versi: '1.1.4',
   dibangun: '2026-07-31',
   pengembang: 'Jorris Ardhian'
 };
