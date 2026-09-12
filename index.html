@@ -56,6 +56,10 @@ button { font:inherit; cursor:pointer; }
   box-shadow:var(--bayang); position:sticky; top:0; z-index:40;
 }
 .puncak-isi { display:flex; align-items:center; gap:12px; padding:10px 0; }
+.puncak-isi .merek      { order:1; }
+.puncak-isi .cari-kotak { order:2; }
+.puncak-isi .statistik  { order:3; }
+.puncak-isi #tbl-tema   { order:4; flex:0 0 auto; }
 .merek { display:flex; align-items:center; gap:10px; min-width:0; }
 .merek-ikon {
   width:38px; height:38px; flex:0 0 38px; border-radius:11px;
@@ -103,10 +107,9 @@ html[data-tema="gelap"] .pil-api { background:#3A2A1A; color:var(--clay); }
 
 /* ============================ NAVIGASI ============================ */
 .nav { background:var(--olive-tua); border-bottom:1px solid var(--garis);
-  overflow-x:auto; position:sticky; top:59px; z-index:30; scrollbar-width:none; }
-.nav::-webkit-scrollbar { display:none; }
+  position:sticky; top:var(--tinggi-puncak,59px); z-index:30; }
 html[data-tema="gelap"] .nav { background:#1E1E16; }
-.nav-isi { display:flex; gap:6px; padding:8px 14px; min-width:max-content; max-width:1120px; margin:0 auto; }
+.nav-isi { display:flex; gap:6px; padding:8px 14px; width:max-content; max-width:100%; margin:0 auto; }
 .nav-tab {
   display:inline-flex; align-items:center; gap:7px; padding:8px 14px;
   border:0; border-radius:12px; background:transparent; color:rgba(230,213,184,.9);
@@ -297,12 +300,34 @@ html[data-tema="gelap"] footer b { color:var(--sand); }
 }
 html[data-tema="gelap"] .lonceng { background:var(--sand); color:#1A1A16; }
 
+/* ---- Panah gulir menu tab ---- */
+.nav { display:flex; align-items:center; position:sticky; }
+.nav-isi { overflow-x:auto; scroll-behavior:smooth; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none; flex:1 1 auto; }
+.nav-isi::-webkit-scrollbar { display:none; }
+.nav-panah { position:absolute; top:0; bottom:0; z-index:2; width:34px; border:0;
+  cursor:pointer; font-size:22px; line-height:1; font-family:inherit;
+  color:var(--sand); background:transparent; padding:0; }
+.nav-panah-kiri  { left:0;  background:linear-gradient(90deg,var(--olive-tua) 55%,transparent); }
+.nav-panah-kanan { right:0; background:linear-gradient(270deg,var(--olive-tua) 55%,transparent); }
+.nav-panah:active { transform:scale(.9); }
+
 @media (max-width:640px) {
+  /* Header disusun tiga baris agar tidak saling menimpa di layar sempit */
+  .puncak-isi { flex-wrap:wrap; gap:8px; padding:8px 0; }
+  .puncak-isi .merek      { order:1; flex:1 1 auto; min-width:0; }
+  .puncak-isi #tbl-tema   { order:2; margin-left:auto; }
+  .puncak-isi .cari-kotak { order:3; flex:1 1 100%; margin-left:0; max-width:none; }
+  .puncak-isi .statistik  { order:4; flex:1 1 100%;
+    overflow-x:auto; scrollbar-width:none; flex-wrap:nowrap; padding-bottom:2px; }
+  .puncak-isi .statistik::-webkit-scrollbar { display:none; }
+  .puncak-isi .statistik .pil { flex:0 0 auto; }
+
   .merek-sub { display:none; }
-  .cari-kotak { max-width:none; }
+  .merek-nama { font-size:15px; }
   .arab { font-size:23px; line-height:2; }
   .judul-modul h2 { font-size:18px; }
-  .nav { top:57px; }
+  .nav-panah { width:28px; font-size:20px; }
 }
 
   </style>
@@ -330,12 +355,17 @@ html[data-tema="gelap"] .lonceng { background:var(--sand); color:#1A1A16; }
         <span class="pil" id="pil-level">Lv 1</span>
         <span class="pil" id="pil-streak">🔥 0 hari</span>
         <span class="pil" id="pil-jaringan">● Online</span>
-        <button class="tombol-ikon" id="tbl-tema" title="Ganti mode terang/gelap" aria-label="Ganti tema">🌙</button>
       </div>
+
+      <button class="tombol-ikon" id="tbl-tema" title="Ganti mode terang/gelap" aria-label="Ganti tema">🌙</button>
     </div>
   </header>
 
-  <nav class="nav"><div class="nav-isi" id="nav-isi"></div></nav>
+  <nav class="nav">
+    <button class="nav-panah nav-panah-kiri sembunyi" id="nav-kiri" type="button" aria-label="Geser menu ke kiri">‹</button>
+    <div class="nav-isi" id="nav-isi"></div>
+    <button class="nav-panah nav-panah-kanan sembunyi" id="nav-kanan" type="button" aria-label="Geser menu ke kanan">›</button>
+  </nav>
 
   <main><div class="wadah" id="modul"></div></main>
 

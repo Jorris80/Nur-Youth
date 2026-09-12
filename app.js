@@ -497,10 +497,85 @@ function _bersihkanLatin(t) {
     .trim();
 }
 
+/* ===================== TATA LETAK HEADER & NAV ===================== */
+
+/**
+ * Tinggi header berubah-ubah: satu baris di layar lebar, tiga baris di ponsel.
+ * Nav menempel tepat di bawahnya lewat variabel CSS, bukan angka tetap —
+ * angka tetap membuat nav menimpa header begitu tata letaknya berubah.
+ */
+function ukurPuncak() {
+  var p = document.querySelector('.puncak');
+  if (!p) return;
+  document.documentElement.style.setProperty('--tinggi-puncak', p.offsetHeight + 'px');
+}
+
+/**
+ * Panah gulir menu tab. Di ponsel, sembilan tab jauh melewati lebar layar dan
+ * tidak ada tanda bahwa menu masih bisa digeser — panah ini yang memberi tahu.
+ * Panah disembunyikan otomatis bila sudah mentok atau bila menu muat seluruhnya.
+ */
+var NavGulir = {
+  siap: false,
+
+  mulai: function () {
+    if (NavGulir.siap) return;
+    var isi = el('nav-isi'), kiri = el('nav-kiri'), kanan = el('nav-kanan');
+    if (!isi || !kiri || !kanan) return;
+    NavGulir.siap = true;
+
+    kiri.addEventListener('click', function () { NavGulir.geser(-1); });
+    kanan.addEventListener('click', function () { NavGulir.geser(1); });
+    isi.addEventListener('scroll', NavGulir.perbarui, { passive: true });
+    window.addEventListener('resize', function () { ukurPuncak(); NavGulir.perbarui(); });
+
+    NavGulir.perbarui();
+  },
+
+  geser: function (arah) {
+    var isi = el('nav-isi');
+    if (!isi) return;
+    // Geser sekitar 70% lebar terlihat: cukup terasa, tapi tidak melewatkan tab
+    isi.scrollBy({ left: arah * Math.round(isi.clientWidth * 0.7), behavior: 'smooth' });
+  },
+
+  perbarui: function () {
+    var isi = el('nav-isi'), kiri = el('nav-kiri'), kanan = el('nav-kanan');
+    if (!isi || !kiri || !kanan) return;
+
+    var bisaGulir = isi.scrollWidth - isi.clientWidth > 4;
+    var diAwal = isi.scrollLeft <= 2;
+    var diAkhir = isi.scrollLeft >= isi.scrollWidth - isi.clientWidth - 2;
+
+    kiri.classList.toggle('sembunyi', !bisaGulir || diAwal);
+    kanan.classList.toggle('sembunyi', !bisaGulir || diAkhir);
+  },
+
+  /** Bawa tab yang sedang aktif ke dalam pandangan */
+  keTabAktif: function () {
+    var isi = el('nav-isi');
+    if (!isi) return;
+    var aktif = isi.querySelector('.nav-tab.aktif');
+    if (!aktif) return;
+
+    var kiriTab = aktif.offsetLeft;
+    var kananTab = kiriTab + aktif.offsetWidth;
+    var pandanganKiri = isi.scrollLeft;
+    var pandanganKanan = pandanganKiri + isi.clientWidth;
+
+    if (kiriTab < pandanganKiri + 40) {
+      isi.scrollTo({ left: Math.max(0, kiriTab - 48), behavior: 'smooth' });
+    } else if (kananTab > pandanganKanan - 40) {
+      isi.scrollTo({ left: kananTab - isi.clientWidth + 48, behavior: 'smooth' });
+    }
+    setTimeout(NavGulir.perbarui, 350);
+  }
+};
+
 /* ===================== VERSI & INFORMASI APLIKASI ===================== */
 
 var INFO_APP = {
-  versi: '1.1.0',
+  versi: '1.1.3',
   dibangun: '2026-07-31',
   pengembang: 'Jorris Ardhian'
 };
@@ -965,6 +1040,9 @@ function gambarNav() {
     return '<button class="nav-tab' + (S.tab === t.id ? ' aktif' : '') +
            '" data-tab="' + t.id + '"><span>' + t.ikon + '</span><span>' + esc(t.label) + '</span></button>';
   }).join('');
+  NavGulir.mulai();
+  NavGulir.perbarui();
+  NavGulir.keTabAktif();
 }
 
 /* ===================== HEADER ===================== */
@@ -2290,6 +2368,8 @@ function muatSemua() {
     S.dzikirHitung = ambilCache('dzikir') || {};
     S.ayatSurah = ambilCache('ayat_' + S.surahAktif) || [];
     gambarHeader(); gambarNav(); gambarModul();
+    ukurPuncak();       // nav menempel tepat di bawah header, berapa pun tingginya
+    window.addEventListener('resize', ukurPuncak);
     Riwayat.mulai();    // tombol back ponsel kembali ke tampilan sebelumnya
     document.addEventListener('keydown', function (ev) {
       if (ev.key === 'Escape' && S.lembarTerbuka) tutupLembar();
