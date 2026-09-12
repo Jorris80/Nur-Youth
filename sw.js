@@ -15,7 +15,7 @@
        belakang layar.
    ===================================================================== */
 
-var VERSI = 'nur-youth-v11';
+var VERSI = 'nur-youth-v12';
 var CACHE_KERANGKA = VERSI + '-kerangka';
 var CACHE_DATA = VERSI + '-data';
 

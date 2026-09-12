@@ -575,7 +575,7 @@ var NavGulir = {
 /* ===================== VERSI & INFORMASI APLIKASI ===================== */
 
 var INFO_APP = {
-  versi: '1.1.4',
+  versi: '1.1.5',
   dibangun: '2026-07-31',
   pengembang: 'Jorris Ardhian'
 };
@@ -591,6 +591,14 @@ function isiTentang() {
     '<p class="info-baris"><span>Pengembang</span><b>' + esc(INFO_APP.pengembang) + '</b></p>' +
     '<p class="info-baris"><span>Mode</span><b>' + (PakaiGoogleScriptRun ? 'Web App' : 'PWA') + '</b></p>' +
     '<p class="info-baris"><span>Status jaringan</span><b>' + (navigator.onLine ? 'Online' : 'Offline') + '</b></p>' +
+    '<p class="info-baris"><span>Dasbor Guru</span><b>' +
+      (S.guru ? 'Aktif' : 'Tidak tampil') + '</b></p>' +
+    (S.guru ? '' :
+      '<p class="samar">Tab Dasbor Guru hanya muncul bagi pengampu kelas dan pemilik ' +
+      'Spreadsheet. Status terbaca: ' + esc(String(S.guruAlasan || '-')) + '. ' +
+      'Bila Anda pengelola dan tab tidak muncul, buat kelas lewat menu Spreadsheet ' +
+      '"🕌 Nur Youth → Buat Kelas Baru", atau tampilkan tabnya sekarang:</p>' +
+      '<p><button class="tbl tbl-garis" data-paksa-guru="1">Tampilkan Tab Dasbor Guru</button></p>') +
     '<hr>' +
     '<p>Platform pembelajaran Al-Qur\'an dan Bahasa Arab untuk generasi muda: ' +
     'hafalan, tajwid, mufrodat, dzikir, tuntunan sholat, dan pemantauan progres.</p>' +
@@ -815,13 +823,32 @@ function muatStatusGuru() {
   return panggil('apakahGuru', {})
     .then(function (r) {
       S.guru = !!(r.ok && r.data && r.data.guru);
+      S.guruAlasan = (r.data && r.data.alasan) || (r.error || 'tidak diketahui');
+
       if (S.guru && TAB.every(function (t) { return t.id !== 'guru'; })) {
         TAB.push({ id: 'guru', ikon: '👨‍🏫', label: 'Dasbor Guru' });
         gambarNav();
       }
       return S.guru;
     })
-    .catch(function () { S.guru = false; return false; });
+    .catch(function (e) {
+      S.guru = false;
+      S.guruAlasan = 'gagal: ' + e.message;
+      return false;
+    });
+}
+
+/**
+ * Munculkan tab Dasbor Guru secara manual, untuk kasus status guru gagal
+ * terbaca. Dipanggil dari halaman Tentang.
+ */
+function paksaTabGuru() {
+  if (TAB.every(function (t) { return t.id !== 'guru'; })) {
+    TAB.push({ id: 'guru', ikon: '👨‍🏫', label: 'Dasbor Guru' });
+  }
+  S.guru = true;
+  tutupLembar();
+  gantiTab('guru');
 }
 
 function muatKelas(pilihId) {
@@ -2005,7 +2032,7 @@ function gambarModul() {
 
 function pasangPendengar() {
   document.addEventListener('click', function (ev) {
-    var t = ev.target.closest('[data-tab],[data-hafal],[data-ucap],[data-ucap-id],[data-latin],[data-lembar],[data-tutup-lembar],[data-audio],[data-dengar],[data-kategori],[data-pilih-kelas],[data-aksi-guru],[data-hapus-santri],' +
+    var t = ev.target.closest('[data-tab],[data-hafal],[data-ucap],[data-ucap-id],[data-latin],[data-lembar],[data-tutup-lembar],[data-paksa-guru],[data-audio],[data-dengar],[data-kategori],[data-pilih-kelas],[data-aksi-guru],[data-hapus-santri],' +
       '[data-mufrodat],[data-jawab],[data-tajwid],[data-uji],[data-ktab],[data-kultum],[data-khutbah],' +
       '[data-tandai-kultum],[data-dtab],[data-tasbih],[data-reset-tasbih],[data-langkah],' +
       '[data-pengingat],[data-hapus-pengingat],[data-jenis],button');
@@ -2018,6 +2045,7 @@ function pasangPendengar() {
     if (d.jenis) return bukaHasilCari(d.jenis, d.id);
 
     /* suara */
+    if (d.paksaGuru) return void paksaTabGuru();
     if (d.lembar) return void bukaLembar(d.lembar);
     if (d.tutupLembar !== undefined) return void tutupLembar();
     if (d.pilihKelas) return void muatDasbor(d.pilihKelas);
@@ -2357,6 +2385,26 @@ function segarkanProgres() {
     .catch(function () {});
 }
 
+/**
+ * Pemasangan antarmuka yang tidak bergantung pada data: pengukuran header,
+ * tombol kembali, tombol Esc, dan pengecekan status guru.
+ * Aman dipanggil berulang — penanda _antarmukaSiap mencegah pendengar ganda.
+ */
+function siapkanAntarmuka() {
+  if (S._antarmukaSiap) return;
+  S._antarmukaSiap = true;
+
+  ukurPuncak();       // nav menempel tepat di bawah header, berapa pun tingginya
+  window.addEventListener('resize', ukurPuncak);
+  Riwayat.mulai();    // tombol back ponsel kembali ke tampilan sebelumnya
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && S.lembarTerbuka) tutupLembar();
+  });
+
+  muatStatusGuru();   // tab Dasbor Guru hanya muncul bila mengampu kelas
+}
+
 function muatSemua() {
   // 1. tampilkan segera dari cache supaya aplikasi bisa dipakai offline
   var cData = ambilCache('dataAwal');
@@ -2368,16 +2416,14 @@ function muatSemua() {
     S.dzikirHitung = ambilCache('dzikir') || {};
     S.ayatSurah = ambilCache('ayat_' + S.surahAktif) || [];
     gambarHeader(); gambarNav(); gambarModul();
-    ukurPuncak();       // nav menempel tepat di bawah header, berapa pun tingginya
-    window.addEventListener('resize', ukurPuncak);
-    Riwayat.mulai();    // tombol back ponsel kembali ke tampilan sebelumnya
-    document.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Escape' && S.lembarTerbuka) tutupLembar();
-    });
-    muatStatusGuru();   // tab Dasbor Guru hanya muncul bila mengampu kelas
     // Ambil murottal surah aktif di latar agar tombol 🔊 langsung berfungsi.
     if (!S.ayatSurah.length && navigator.onLine) setTimeout(function () { muatAyat(S.surahAktif); }, 900);
   }
+
+  // Inisialisasi berikut WAJIB berjalan baik ada cache maupun tidak.
+  // Sebelumnya berada di dalam blok if (cData) di atas, sehingga pada pemuatan
+  // pertama tab Dasbor Guru tidak pernah muncul dan tombol back tidak aktif.
+  siapkanAntarmuka();
 
   if (!navigator.onLine) {
     if (!cData) {
@@ -2405,6 +2451,7 @@ function muatSemua() {
       simpanCache('pengingat', S.pengingat);
 
       gambarHeader(); gambarNav(); gambarModul();
+      siapkanAntarmuka();
       return panggil('ambilHafalan', {});
     })
     .then(function (r) {
